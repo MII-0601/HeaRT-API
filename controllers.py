@@ -45,10 +45,26 @@ async def create_item(item: Item):
                 morph_analyzer_name=segmenter,
                 bert_tokenizer=bert_tokenizer,
                 is_document=True
-            )
+		)   
+	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	n_gpu = torch.cuda.device_count()
 
+	saved_model = "./ouall"
+	
+	tokenizer = BertTokenizer.from_pretrained(
+            saved_model,
+            do_lower_case=args.do_lower_case,
+            do_basic_tokenize=False,
+            tokenize_chinese_chars=False
+        )
+        with open(os.path.join(saved_model, 'ner2ix.json')) as json_fi:
+            bio2ix = json.load(json_fi)
+        with open(os.path.join(saved_model, 'mod2ix.json')) as json_fi:
+            mod2ix = json.load(json_fi)
+        with open(os.path.join(saved_model, 'rel2ix.json')) as json_fi:
+            rel2ix = ccon.load(json_fi)
+	model = torch.load(os.path.join(saved_model, 'model.pt'))
+        model.to(device)
 
-
-
-
+	test_dir = "tmp/"
 
