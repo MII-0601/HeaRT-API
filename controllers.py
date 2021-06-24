@@ -4,7 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
-from utils import * 
+from utils import *
 
 app = FastAPI()
 
@@ -28,7 +28,7 @@ async def create_item(item: Item):
 	dir_file = open('test.txt','w',encoding='UTF-8')
 	dir_file.writelines(item.text)
 	dir_file.close()
-	
+
 	file_name = dir_file.split('/')[-1].rsplit('.', 1)[0]
 	conll_dir = './output_conll'
 
@@ -45,12 +45,12 @@ async def create_item(item: Item):
                 morph_analyzer_name=segmenter,
                 bert_tokenizer=bert_tokenizer,
                 is_document=True
-		)   
+		)
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	n_gpu = torch.cuda.device_count()
 
 	saved_model = "./ouall"
-	
+
 	tokenizer = BertTokenizer.from_pretrained(
             saved_model,
             do_lower_case=args.do_lower_case,
@@ -67,4 +67,37 @@ async def create_item(item: Item):
         model.to(device)
 
 	test_dir = "tmp/"
+    pred_dir = "tmp/"
+    batch_size = 1
+    test_file = "/home/is/mihiro-n/JaMIE-main/output_conll2/single.conll"
+    test_output = "/home/is/mihiro-n/JaMIE-main/output"
 
+    test_comments, test_toks, test_ners, test_mods, test_rels, _, _, _, _ = utils.extract_rel_data_from_mh_conll_v2(
+                test_file,
+                down_neg=0.0)
+
+            max_len = utils.max_sents_len(test_toks, tokenizer)
+            cls_max_len = max_len + 2
+
+            test_dataset, test_comment, test_tok, test_ner, test_mod, test_rel, test_spo = utils.convert_rels_to_mhs_v3(
+                test_comments, test_toks, test_ners, test_mods, test_rels,
+                tokenizer, bio2ix, mod2ix, rel2ix, cls_max_len, verbose=0)
+
+            cls_max_len = min(cls_max_len, bert_max_len)
+
+            test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+
+            eval_joint(model, test_dataloader, test_comment, test_tok, test_ner, test_mod, test_rel, test_spo,
+                       bio2ix, mod2ix, rel2ix, cls_max_len, args.device, "Final test dataset",
+                       print_levels=(2, 2, 2), out_file=args.test_output, test_mode=False, verbose=0)
+            test_evaluator = MhsEvaluator(args.test_file, args.test_output)
+            test_evaluator.eval_ner(print_level=1)
+            test_evaluator.eval_mod(print_level=1)
+            # test_evaluator.eval_rel(print_level=2)
+            test_evaluator.eval_mention_rel(print_level=2)
+
+    #conll2xml
+    #conll_dir,xml_dir
+    output_conll = "output_cl"
+    xml_dir = "./XML"
+    conll_to_xml(output_conll,xml_dir)
