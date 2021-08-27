@@ -16,12 +16,16 @@ from utils import *
 from transformers import *
 warnings.filterwarnings("ignore")
 
+text = "術後両側肺野特に左肺優位にすりガラス影や網状影を認めます。前回と比べ概ね変化ありません。鈍化あり。前回と同様です。両肺尖部に胸膜肥厚あり。"
+dir_file = open('./data/test.xml', 'w+', encoding='UTF-8')
+dir_file.writelines(text)
+dir_file.close()
 
 #xml2conll
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 saved_model = "./ouall" 
 model = torch.load(os.path.join(saved_model, 'model.pt'))
-model.to(device)
+model = model.to(device)
 
 xml_dir = "./data"
 conll_dir = "./txt2conll"
