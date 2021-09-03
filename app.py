@@ -17,20 +17,20 @@ from transformers import *
 warnings.filterwarnings("ignore")
 
 text = "術後両側肺野特に左肺優位にすりガラス影や網状影を認めます。前回と比べ概ね変化ありません。鈍化あり。前回と同様です。両肺尖部に胸膜肥厚あり。"
-dir_file = open('./data/test.xml', 'w+', encoding='UTF-8')
+dir_file = open('./data/test.txt', 'w+', encoding='UTF-8')
 dir_file.writelines(text)
 dir_file.close()
 
 #xml2conll
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-saved_model = "./ouall" 
+device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+saved_model = "./nccall" 
 model = torch.load(os.path.join(saved_model, 'model.pt'))
 model = model.to(device)
 
-xml_dir = "./data"
+xml_dir = "./MedTxt"
 conll_dir = "./txt2conll"
 doc_level = True
-is_raw = False 
+is_raw = True
 segmenter = 'mecab'
 bert_dir = "./NICT_BERT-base_JapaneseWikipedia_32K_BPE"
  
@@ -85,7 +85,7 @@ else:
             )
 
 
-test_file = './txt2conll/single.conll'
+test_file = './txt2conll/test.conll'
 bert_max_len = 512
 
 tokenizer = BertTokenizer.from_pretrained (
@@ -94,7 +94,7 @@ tokenizer = BertTokenizer.from_pretrained (
             do_basic_tokenize=False,
             tokenize_chinese_chars=False
         )
-batch_size = 4
+batch_size = 1 
 
 with open(os.path.join(saved_model, 'ner2ix.json')) as json_fi:
             bio2ix = json.load(json_fi)
@@ -104,6 +104,7 @@ with open(os.path.join(saved_model, 'rel2ix.json')) as json_fi:
             rel2ix = json.load(json_fi)
 
 test_output = './test_output/test.conll'
+
 test_comments, test_toks, test_ners, test_mods, test_rels, _, _, _, _ = utils.extract_rel_data_from_mh_conll_v2(
                 test_file,
                 down_neg=0.0)
@@ -133,13 +134,15 @@ test_evaluator.eval_mention_rel(print_level=2)
 
 
 #conll2xml
-conll_dir = './test_output'
-xml_result_dir = './xml_result'
+conll_dir = './test_output' 
+xml_result_dir = './conll2xml'
 
 conll_list = [os.path.join(conll_dir, file) for file in sorted(os.listdir(conll_dir)) if file.endswith(".conll")]
 print(f"total files: {len(conll_list)}")
 if not os.path.exists(xml_result_dir):
      os.makedirs(xml_result_dir)
+
+
 for dir_conll in conll_list:
      file_name = dir_conll.split('/')[-1].rsplit('.', 1)[0]
      xml_out = os.path.join(xml_result_dir, f"{file_name}.xml")
