@@ -17,20 +17,21 @@ from transformers import *
 warnings.filterwarnings("ignore")
 
 text = "術後両側肺野特に左肺優位にすりガラス影や網状影を認めます。前回と比べ概ね変化ありません。鈍化あり。前回と同様です。両肺尖部に胸膜肥厚あり。"
-dir_file = open('./data/test.txt', 'w+', encoding='UTF-8')
-dir_file.writelines(text)
-dir_file.close()
+text_file = open('./data/test.txt', 'w+', encoding='UTF-8')
+text_file.writelines(text)
+text_file.close()
+
 
 #xml2conll
-device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 saved_model = "./nccall" 
 model = torch.load(os.path.join(saved_model, 'model.pt'))
 model = model.to(device)
 
-xml_dir = "./MedTxt"
+xml_dir = "./data"
 conll_dir = "./txt2conll"
-doc_level = True
-is_raw = True
+doc_level = True 
+is_raw = True 
 segmenter = 'mecab'
 bert_dir = "./NICT_BERT-base_JapaneseWikipedia_32K_BPE"
  
@@ -44,8 +45,8 @@ bert_tokenizer = BertTokenizer.from_pretrained(
 bert_tokenizer.add_tokens(['[JASP]'])
 
 train_scale = 1.0
-with_dct = True
-xml_list = [os.path.join(xml_dir, file) for file in sorted(os.listdir(xml_dir)) if file.endswith(".xml")]
+with_dct = True 
+xml_list = [os.path.join(xml_dir, file) for file in sorted(os.listdir(xml_dir)) if file.endswith(".txt")]
 print(f"total files: {len(xml_list)}")
 
 if not os.path.exists(conll_dir):
@@ -75,7 +76,7 @@ else:
                     conll_dir,
                     f"{file_name}.conll"
                 ),
-                sent_tag=True,
+                sent_tag=False,
                 contains_modality=True,
                 with_dct=with_dct,
                 is_raw=is_raw,
@@ -118,7 +119,6 @@ cls_max_len = max_len + 2
 test_dataset, test_comment, test_tok, test_ner, test_mod, test_rel, test_spo = utils.convert_rels_to_mhs_v3(
                 test_comments, test_toks, test_ners, test_mods, test_rels,
                 tokenizer, bio2ix, mod2ix, rel2ix, cls_max_len, verbose=0)
-
 cls_max_len = min(cls_max_len, bert_max_len)
 
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
